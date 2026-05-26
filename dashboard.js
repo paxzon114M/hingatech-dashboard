@@ -1,6 +1,6 @@
 // ========== CONFIGURATION ==========
 // Change this to your backend URL (the one running on your computer)
-const API_BASE = 'http://localhost:3000';
+const API_BASE = 'https://hingatech-backend.onrender.com';
 
 // ========== DOM Elements ==========
 const statusBadge = document.getElementById('status-badge');
