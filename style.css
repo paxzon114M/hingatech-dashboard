@@ -149,3 +149,40 @@ main {
     .grid { grid-template-columns: 1fr; }
     header { flex-direction: column; text-align: center; }
 }
+/* Device Status Styles */
+.device-status {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.device-online {
+  background-color: #38a16920;
+  color: #38a169;
+}
+
+.device-warning {
+  background-color: #d69e2e20;
+  color: #d69e2e;
+}
+
+.device-offline {
+  background-color: #e53e3e20;
+  color: #e53e3e;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Card offline warning */
+.card-offline {
+  border-top-color: #e53e3e !important;
+  background-color: #fff5f5;
+}
