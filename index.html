@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HingaTech Farm Monitor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🌱 HingaTech Farm Monitor</h1>
+        <div class="status-area">
+            <span id="status-badge" class="online">● Online</span>
+            <button id="refresh-btn" class="refresh-btn">⟳ Refresh</button>
+        </div>
+    </header>
+    <main>
+        <div class="dashboard-info">
+            <p>Live sensor data from your farm</p>
+            <p id="last-updated" class="last-updated">Fetching data...</p>
+        </div>
+        <div id="grid" class="grid"></div>
+    </main>
+    <script src="dashboard.js"></script>
+</body>
+</html>
