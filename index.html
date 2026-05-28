@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>HingaTech Farm Monitor</title>
-    <link rel="stylesheet" href="style.css">
     <style>
         * {
             margin: 0;
@@ -187,15 +186,9 @@
         }
 
         /* Colour coding */
-        .normal {
-            color: #38a169;
-        }
-        .warning {
-            color: #d69e2e;
-        }
-        .critical {
-            color: #e53e3e;
-        }
+        .normal { color: #38a169; }
+        .warning { color: #d69e2e; }
+        .critical { color: #e53e3e; }
 
         /* Card offline warning */
         .card-offline {
@@ -232,6 +225,150 @@
             font-size: 1rem;
         }
 
+        /* ========== ALERTS SECTION ========== */
+        .alerts-section {
+            background: white;
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-top: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .alerts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .alerts-header h2 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-badge {
+            background: #e53e3e;
+            color: white;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .alerts-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: 12px;
+            border-left: 4px solid;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1rem;
+            transition: all 0.2s;
+        }
+
+        .alert-item:hover {
+            transform: translateX(4px);
+        }
+
+        .alert-critical {
+            background: #fff5f5;
+            border-left-color: #e53e3e;
+        }
+
+        .alert-warning {
+            background: #fffff0;
+            border-left-color: #d69e2e;
+        }
+
+        .alert-info {
+            background: #ebf8ff;
+            border-left-color: #3182ce;
+        }
+
+        .alert-message {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+        }
+
+        .alert-critical .alert-title { color: #e53e3e; }
+        .alert-warning .alert-title { color: #d69e2e; }
+
+        .alert-text {
+            font-size: 0.85rem;
+            color: #4a5568;
+            margin-bottom: 6px;
+        }
+
+        .alert-time {
+            font-size: 0.7rem;
+            color: #718096;
+        }
+
+        .acknowledge-btn {
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .acknowledge-btn:hover {
+            background: #2d3748;
+        }
+
+        .no-alerts {
+            text-align: center;
+            color: #38a169;
+            padding: 2rem;
+            font-size: 1rem;
+        }
+
+        .loading-alerts {
+            text-align: center;
+            color: #718096;
+            padding: 2rem;
+        }
+
+        /* Irrigation recommendation */
+        .irrigation-card {
+            background: linear-gradient(135deg, #2d6a4f 0%, #1b4d3b 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-top: 1.5rem;
+        }
+
+        .irrigation-title {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .irrigation-message {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
         /* Responsive */
         @media (max-width: 600px) {
             header {
@@ -243,6 +380,16 @@
             }
             main {
                 padding: 1rem;
+            }
+            .alerts-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .alert-item {
+                flex-direction: column;
+            }
+            .acknowledge-btn {
+                align-self: flex-end;
             }
         }
     </style>
@@ -261,8 +408,25 @@
             <p>📡 Live sensor data from your farm</p>
             <p id="last-updated" class="last-updated">Fetching data...</p>
         </div>
-        <div id="grid" class="grid">
-            <!-- Sensor cards will appear here -->
+
+        <!-- Sensor Grid -->
+        <div id="grid" class="grid"></div>
+
+        <!-- Irrigation Recommendation -->
+        <div id="irrigation-card" class="irrigation-card" style="display: none;">
+            <div class="irrigation-title">💧 IRRIGATION RECOMMENDATION</div>
+            <div class="irrigation-message" id="irrigation-message">Loading...</div>
+        </div>
+
+        <!-- ALERTS SECTION -->
+        <div class="alerts-section">
+            <div class="alerts-header">
+                <h2>🚨 Active Alerts</h2>
+                <span id="alert-count" class="alert-badge">0</span>
+            </div>
+            <div id="alerts-container" class="alerts-container">
+                <div class="loading-alerts">🔍 Checking for alerts...</div>
+            </div>
         </div>
     </main>
 
@@ -275,6 +439,10 @@
         const refreshBtn = document.getElementById('refresh-btn');
         const lastUpdatedEl = document.getElementById('last-updated');
         const grid = document.getElementById('grid');
+        const alertsContainer = document.getElementById('alerts-container');
+        const alertCount = document.getElementById('alert-count');
+        const irrigationCard = document.getElementById('irrigation-card');
+        const irrigationMessage = document.getElementById('irrigation-message');
 
         // ========== Helper Functions ==========
         function showSkeleton() {
@@ -293,31 +461,38 @@
             }
         }
 
-        function getColorClass(value, normalMin, normalMax, warnMin, warnMax, critMin, critMax) {
-            if (value < critMin || value > critMax) return 'critical';
+        function getColorClass(value, normalMin, normalMax) {
             if (value < normalMin || value > normalMax) return 'warning';
             return 'normal';
         }
 
         function getTempClass(temp) {
-            return getColorClass(temp, 15, 35, 10, 40, -40, 80);
+            if (temp < 10 || temp > 40) return 'critical';
+            if (temp < 15 || temp > 35) return 'warning';
+            return 'normal';
         }
 
         function getHumidityClass(humidity) {
-            return getColorClass(humidity, 40, 80, 20, 90, 0, 100);
+            if (humidity < 20 || humidity > 90) return 'critical';
+            if (humidity < 40 || humidity > 80) return 'warning';
+            return 'normal';
         }
 
         function getSoilClass(soil) {
-            return getColorClass(soil, 30, 70, 15, 85, 0, 100);
+            if (soil < 15 || soil > 85) return 'critical';
+            if (soil < 30 || soil > 70) return 'warning';
+            return 'normal';
         }
 
         function timeAgo(isoString) {
+            if (!isoString) return 'Never';
             const seconds = Math.floor((Date.now() - new Date(isoString)) / 1000);
             if (seconds < 60) return `${seconds}s ago`;
             const minutes = Math.floor(seconds / 60);
             if (minutes < 60) return `${minutes}m ago`;
             const hours = Math.floor(minutes / 60);
-            return `${hours}h ago`;
+            if (hours < 24) return `${hours}h ago`;
+            return `${Math.floor(hours / 24)}d ago`;
         }
 
         function isDeviceActive(isoString) {
@@ -340,7 +515,7 @@
             lastUpdatedEl.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
         }
 
-        // ========== Fetch Data from Backend ==========
+        // ========== Fetch Sensor Data ==========
         async function fetchReadings() {
             try {
                 statusBadge.className = 'online';
@@ -397,23 +572,100 @@
             });
         }
 
+        // ========== Fetch Alerts ==========
+        async function fetchAlerts() {
+            try {
+                const response = await fetch(`${API_BASE}/api/alerts/active`);
+                if (!response.ok) throw new Error('Failed to fetch alerts');
+                const alerts = await response.json();
+                displayAlerts(alerts);
+            } catch (error) {
+                console.error('Alert fetch error:', error);
+                if (alertsContainer) {
+                    alertsContainer.innerHTML = '<div class="loading-alerts">⚠️ Unable to load alerts. Backend may need update.</div>';
+                }
+            }
+        }
+
+        function displayAlerts(alerts) {
+            if (!alertsContainer) return;
+            
+            if (!alerts || alerts.length === 0) {
+                alertsContainer.innerHTML = '<div class="no-alerts">✅ No active alerts. All crop conditions are good!</div>';
+                if (alertCount) alertCount.textContent = '0';
+                return;
+            }
+            
+            if (alertCount) alertCount.textContent = alerts.length;
+            
+            alertsContainer.innerHTML = alerts.map(alert => `
+                <div class="alert-item alert-${alert.severity || 'warning'}">
+                    <div class="alert-message">
+                        <div class="alert-title">
+                            ${alert.severity === 'critical' ? '🚨 CRITICAL' : '⚠️ CAUTION'}: ${(alert.type || 'sensor').replace('_', ' ').toUpperCase()}
+                        </div>
+                        <div class="alert-text">${alert.message || 'Check your sensor readings'}</div>
+                        <div class="alert-time">${timeAgo(alert.created_at)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ========== Fetch Irrigation Recommendation ==========
+        async function fetchIrrigation() {
+            try {
+                const response = await fetch(`${API_BASE}/api/sensor/latest`);
+                if (!response.ok) throw new Error('Failed');
+                const readings = await response.json();
+                if (readings && readings.length > 0 && irrigationCard) {
+                    irrigationCard.style.display = 'block';
+                    const moisture = readings[0].soil_moisture;
+                    let recommendation = '';
+                    if (moisture < 30) {
+                        recommendation = '🚨 URGENT: Soil is very dry! Water immediately to save your crops.';
+                    } else if (moisture < 45) {
+                        recommendation = '⚠️ Soil is getting dry. Plan to irrigate within 24 hours.';
+                    } else if (moisture < 60) {
+                        recommendation = '✅ Soil moisture is optimal. No irrigation needed.';
+                    } else if (moisture < 75) {
+                        recommendation = '💧 Soil is moist. Hold off on watering.';
+                    } else {
+                        recommendation = '🌊 Soil is too wet! Stop irrigation to prevent root rot.';
+                    }
+                    irrigationMessage.textContent = recommendation;
+                }
+            } catch (error) {
+                console.error('Irrigation fetch error:', error);
+            }
+        }
+
         // ========== Auto Refresh ==========
         let refreshInterval;
 
         function startAutoRefresh() {
             if (refreshInterval) clearInterval(refreshInterval);
-            refreshInterval = setInterval(fetchReadings, 10000);
+            refreshInterval = setInterval(() => {
+                fetchReadings();
+                fetchAlerts();
+                fetchIrrigation();
+            }, 10000);
         }
 
         // ========== Manual Refresh ==========
-        refreshBtn.addEventListener('click', () => {
-            showSkeleton();
-            fetchReadings();
-        });
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                showSkeleton();
+                fetchReadings();
+                fetchAlerts();
+                fetchIrrigation();
+            });
+        }
 
         // ========== Initial Load ==========
         showSkeleton();
         fetchReadings();
+        fetchAlerts();
+        fetchIrrigation();
         startAutoRefresh();
     </script>
 </body>
