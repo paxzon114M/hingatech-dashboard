@@ -207,3 +207,61 @@ async function acknowledgeAlert(alertId) {
 
 // Add to your existing loadDashboard or fetchReadings function
 // Call fetchAlerts() alongside fetchReadings()
+
+// Fetch and display alerts
+async function fetchAlerts() {
+    try {
+        const response = await fetch(`${API_BASE}/api/alerts/active`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (!response.ok) throw new Error('Failed to fetch alerts');
+        const alerts = await response.json();
+        displayAlerts(alerts);
+    } catch (error) {
+        console.error('Alert fetch error:', error);
+    }
+}
+
+function displayAlerts(alerts) {
+    const container = document.getElementById('alerts-container');
+    const alertCount = document.getElementById('alert-count');
+    
+    if (!alerts || alerts.length === 0) {
+        container.innerHTML = '<div class="no-alerts">✅ No active alerts. All conditions are good!</div>';
+        if (alertCount) alertCount.textContent = '0';
+        return;
+    }
+    
+    if (alertCount) alertCount.textContent = alerts.length;
+    
+    container.innerHTML = alerts.map(alert => `
+        <div class="alert-item alert-${alert.severity}">
+            <div class="alert-message">
+                <div class="alert-title">${alert.severity === 'critical' ? '🚨 CRITICAL' : '⚠️ CAUTION'}: ${alert.type.replace('_', ' ').toUpperCase()}</div>
+                <div class="alert-text">${alert.message}</div>
+                <div class="alert-time">${alert.farm_name || 'Farm'} • ${timeAgo(alert.created_at)}</div>
+            </div>
+            <button class="acknowledge-btn" onclick="acknowledgeAlert(${alert.id})">✓ Acknowledge</button>
+        </div>
+    `).join('');
+}
+
+async function acknowledgeAlert(alertId) {
+    try {
+        const response = await fetch(`${API_BASE}/api/alerts/${alertId}/acknowledge`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        if (response.ok) {
+            fetchAlerts(); // Refresh alerts list
+        }
+    } catch (error) {
+        console.error('Error acknowledging alert:', error);
+    }
+}
+
+// Add to your existing loadDashboard or fetchReadings function
+// Call fetchAlerts() alongside fetchReadings()
