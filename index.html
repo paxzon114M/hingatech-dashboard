@@ -225,7 +225,7 @@
             font-size: 1rem;
         }
 
-        /* ========== ALERTS SECTION ========== */
+        /* ALERTS SECTION */
         .alerts-section {
             background: white;
             border-radius: 16px;
@@ -260,102 +260,55 @@
         }
 
         .alerts-container {
-            max-height: 400px;
+            max-height: 300px;
             overflow-y: auto;
         }
 
         .alert-item {
-            padding: 1rem;
+            padding: 0.8rem;
             margin-bottom: 0.75rem;
             border-radius: 12px;
             border-left: 4px solid;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 1rem;
-            transition: all 0.2s;
-        }
-
-        .alert-item:hover {
-            transform: translateX(4px);
+            background: #f7fafc;
         }
 
         .alert-critical {
-            background: #fff5f5;
             border-left-color: #e53e3e;
+            background: #fff5f5;
         }
 
         .alert-warning {
-            background: #fffff0;
             border-left-color: #d69e2e;
-        }
-
-        .alert-info {
-            background: #ebf8ff;
-            border-left-color: #3182ce;
-        }
-
-        .alert-message {
-            flex: 1;
+            background: #fffff0;
         }
 
         .alert-title {
             font-weight: 700;
+            font-size: 0.85rem;
             margin-bottom: 4px;
-            font-size: 0.9rem;
         }
 
         .alert-critical .alert-title { color: #e53e3e; }
         .alert-warning .alert-title { color: #d69e2e; }
 
         .alert-text {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #4a5568;
-            margin-bottom: 6px;
-        }
-
-        .alert-time {
-            font-size: 0.7rem;
-            color: #718096;
-        }
-
-        .acknowledge-btn {
-            background: #4a5568;
-            color: white;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.7rem;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-
-        .acknowledge-btn:hover {
-            background: #2d3748;
         }
 
         .no-alerts {
             text-align: center;
             color: #38a169;
-            padding: 2rem;
-            font-size: 1rem;
+            padding: 1.5rem;
         }
 
-        .loading-alerts {
-            text-align: center;
-            color: #718096;
-            padding: 2rem;
-        }
-
-        /* Irrigation recommendation */
+        /* Irrigation card */
         .irrigation-card {
             background: linear-gradient(135deg, #2d6a4f 0%, #1b4d3b 100%);
             color: white;
             border-radius: 16px;
             padding: 1.25rem;
-            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
         .irrigation-title {
@@ -381,16 +334,6 @@
             main {
                 padding: 1rem;
             }
-            .alerts-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .alert-item {
-                flex-direction: column;
-            }
-            .acknowledge-btn {
-                align-self: flex-end;
-            }
         }
     </style>
 </head>
@@ -409,23 +352,23 @@
             <p id="last-updated" class="last-updated">Fetching data...</p>
         </div>
 
-        <!-- Sensor Grid -->
-        <div id="grid" class="grid"></div>
-
-        <!-- Irrigation Recommendation -->
+        <!-- Irrigation Recommendation Card -->
         <div id="irrigation-card" class="irrigation-card" style="display: none;">
             <div class="irrigation-title">💧 IRRIGATION RECOMMENDATION</div>
             <div class="irrigation-message" id="irrigation-message">Loading...</div>
         </div>
 
-        <!-- ALERTS SECTION -->
+        <!-- Sensor Grid -->
+        <div id="grid" class="grid"></div>
+
+        <!-- Alerts Section -->
         <div class="alerts-section">
             <div class="alerts-header">
-                <h2>🚨 Active Alerts</h2>
+                <h2>🚨 Crop Alerts</h2>
                 <span id="alert-count" class="alert-badge">0</span>
             </div>
             <div id="alerts-container" class="alerts-container">
-                <div class="loading-alerts">🔍 Checking for alerts...</div>
+                <div class="loading-alerts">🔍 Checking conditions...</div>
             </div>
         </div>
     </main>
@@ -461,11 +404,6 @@
             }
         }
 
-        function getColorClass(value, normalMin, normalMax) {
-            if (value < normalMin || value > normalMax) return 'warning';
-            return 'normal';
-        }
-
         function getTempClass(temp) {
             if (temp < 10 || temp > 40) return 'critical';
             if (temp < 15 || temp > 35) return 'warning';
@@ -491,8 +429,7 @@
             const minutes = Math.floor(seconds / 60);
             if (minutes < 60) return `${minutes}m ago`;
             const hours = Math.floor(minutes / 60);
-            if (hours < 24) return `${hours}h ago`;
-            return `${Math.floor(hours / 24)}d ago`;
+            return `${hours}h ago`;
         }
 
         function isDeviceActive(isoString) {
@@ -515,6 +452,111 @@
             lastUpdatedEl.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
         }
 
+        // Generate alerts based on sensor values
+        function generateAlertsFromReadings(readings) {
+            const alerts = [];
+            
+            if (!readings || readings.length === 0) return alerts;
+            
+            for (const reading of readings) {
+                // Soil moisture alerts
+                if (reading.soil_moisture < 30) {
+                    alerts.push({
+                        severity: reading.soil_moisture < 20 ? 'critical' : 'warning',
+                        title: 'SOIL TOO DRY',
+                        message: `Soil moisture is ${reading.soil_moisture}%. WATER IMMEDIATELY to save your crops!`,
+                        time: reading.recorded_at
+                    });
+                } else if (reading.soil_moisture > 75) {
+                    alerts.push({
+                        severity: reading.soil_moisture > 85 ? 'critical' : 'warning',
+                        title: 'SOIL TOO WET',
+                        message: `Soil moisture is ${reading.soil_moisture}%. Stop irrigation to prevent root rot.`,
+                        time: reading.recorded_at
+                    });
+                }
+                
+                // Temperature alerts
+                if (reading.temperature > 35) {
+                    alerts.push({
+                        severity: reading.temperature > 40 ? 'critical' : 'warning',
+                        title: 'HIGH TEMPERATURE',
+                        message: `Temperature is ${reading.temperature}°C. Crops at risk! Provide shade or ventilation.`,
+                        time: reading.recorded_at
+                    });
+                } else if (reading.temperature < 15) {
+                    alerts.push({
+                        severity: reading.temperature < 10 ? 'critical' : 'warning',
+                        title: 'LOW TEMPERATURE',
+                        message: `Temperature is ${reading.temperature}°C. Frost risk! Protect your crops.`,
+                        time: reading.recorded_at
+                    });
+                }
+                
+                // Humidity alerts
+                if (reading.humidity > 80) {
+                    alerts.push({
+                        severity: 'warning',
+                        title: 'HIGH HUMIDITY',
+                        message: `Humidity is ${reading.humidity}%. Risk of fungal diseases. Improve air circulation.`,
+                        time: reading.recorded_at
+                    });
+                } else if (reading.humidity < 40) {
+                    alerts.push({
+                        severity: 'warning',
+                        title: 'LOW HUMIDITY',
+                        message: `Humidity is ${reading.humidity}%. Plants may dry out quickly. Consider misting.`,
+                        time: reading.recorded_at
+                    });
+                }
+            }
+            
+            return alerts;
+        }
+
+        // Display alerts in the UI
+        function displayAlerts(alerts) {
+            if (!alertsContainer) return;
+            
+            if (alerts.length === 0) {
+                alertsContainer.innerHTML = '<div class="no-alerts">✅ All crop conditions are good! No alerts.</div>';
+                if (alertCount) alertCount.textContent = '0';
+                return;
+            }
+            
+            if (alertCount) alertCount.textContent = alerts.length;
+            
+            alertsContainer.innerHTML = alerts.map(alert => `
+                <div class="alert-item alert-${alert.severity}">
+                    <div class="alert-title">${alert.severity === 'critical' ? '🚨 CRITICAL' : '⚠️ CAUTION'}: ${alert.title}</div>
+                    <div class="alert-text">${alert.message}</div>
+                    <div class="alert-time" style="font-size:0.7rem; margin-top:4px;">${timeAgo(alert.time)}</div>
+                </div>
+            `).join('');
+        }
+
+        // Generate irrigation recommendation
+        function updateIrrigation(soilMoisture) {
+            if (!irrigationCard || !irrigationMessage) return;
+            
+            irrigationCard.style.display = 'block';
+            let recommendation = '';
+            
+            if (soilMoisture < 30) {
+                recommendation = '🚨 URGENT: Soil is very dry (' + soilMoisture + '%)! Water immediately to save your crops.';
+            } else if (soilMoisture < 45) {
+                recommendation = '⚠️ Soil is getting dry (' + soilMoisture + '%). Plan to irrigate within 24 hours.';
+            } else if (soilMoisture < 65) {
+                recommendation = '✅ Soil moisture is optimal (' + soilMoisture + '%). No irrigation needed.';
+            } else if (soilMoisture < 80) {
+                recommendation = '💧 Soil is moist (' + soilMoisture + '%). Hold off on watering.';
+            } else {
+                recommendation = '🌊 Soil is too wet (' + soilMoisture + '%)! Stop irrigation to prevent root rot.';
+            }
+            
+            irrigationMessage.textContent = recommendation;
+        }
+
         // ========== Fetch Sensor Data ==========
         async function fetchReadings() {
             try {
@@ -525,11 +567,23 @@
                 const data = await response.json();
                 renderCards(data);
                 updateLastUpdated();
+                
+                // Generate and display alerts from the data
+                const alerts = generateAlertsFromReadings(data);
+                displayAlerts(alerts);
+                
+                // Update irrigation recommendation (using first device's soil moisture)
+                if (data && data.length > 0) {
+                    updateIrrigation(data[0].soil_moisture);
+                }
             } catch (error) {
                 console.error('Fetch error:', error);
                 statusBadge.className = 'offline';
                 statusBadge.textContent = '● Offline';
                 grid.innerHTML = '<div class="error-msg">⚠️ Cannot reach server. Make sure the backend is running.</div>';
+                if (alertsContainer) {
+                    alertsContainer.innerHTML = '<div class="no-alerts">⚠️ Unable to fetch data. Check your connection.</div>';
+                }
             }
         }
 
@@ -572,83 +626,12 @@
             });
         }
 
-        // ========== Fetch Alerts ==========
-        async function fetchAlerts() {
-            try {
-                const response = await fetch(`${API_BASE}/api/alerts/active`);
-                if (!response.ok) throw new Error('Failed to fetch alerts');
-                const alerts = await response.json();
-                displayAlerts(alerts);
-            } catch (error) {
-                console.error('Alert fetch error:', error);
-                if (alertsContainer) {
-                    alertsContainer.innerHTML = '<div class="loading-alerts">⚠️ Unable to load alerts. Backend may need update.</div>';
-                }
-            }
-        }
-
-        function displayAlerts(alerts) {
-            if (!alertsContainer) return;
-            
-            if (!alerts || alerts.length === 0) {
-                alertsContainer.innerHTML = '<div class="no-alerts">✅ No active alerts. All crop conditions are good!</div>';
-                if (alertCount) alertCount.textContent = '0';
-                return;
-            }
-            
-            if (alertCount) alertCount.textContent = alerts.length;
-            
-            alertsContainer.innerHTML = alerts.map(alert => `
-                <div class="alert-item alert-${alert.severity || 'warning'}">
-                    <div class="alert-message">
-                        <div class="alert-title">
-                            ${alert.severity === 'critical' ? '🚨 CRITICAL' : '⚠️ CAUTION'}: ${(alert.type || 'sensor').replace('_', ' ').toUpperCase()}
-                        </div>
-                        <div class="alert-text">${alert.message || 'Check your sensor readings'}</div>
-                        <div class="alert-time">${timeAgo(alert.created_at)}</div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // ========== Fetch Irrigation Recommendation ==========
-        async function fetchIrrigation() {
-            try {
-                const response = await fetch(`${API_BASE}/api/sensor/latest`);
-                if (!response.ok) throw new Error('Failed');
-                const readings = await response.json();
-                if (readings && readings.length > 0 && irrigationCard) {
-                    irrigationCard.style.display = 'block';
-                    const moisture = readings[0].soil_moisture;
-                    let recommendation = '';
-                    if (moisture < 30) {
-                        recommendation = '🚨 URGENT: Soil is very dry! Water immediately to save your crops.';
-                    } else if (moisture < 45) {
-                        recommendation = '⚠️ Soil is getting dry. Plan to irrigate within 24 hours.';
-                    } else if (moisture < 60) {
-                        recommendation = '✅ Soil moisture is optimal. No irrigation needed.';
-                    } else if (moisture < 75) {
-                        recommendation = '💧 Soil is moist. Hold off on watering.';
-                    } else {
-                        recommendation = '🌊 Soil is too wet! Stop irrigation to prevent root rot.';
-                    }
-                    irrigationMessage.textContent = recommendation;
-                }
-            } catch (error) {
-                console.error('Irrigation fetch error:', error);
-            }
-        }
-
         // ========== Auto Refresh ==========
         let refreshInterval;
 
         function startAutoRefresh() {
             if (refreshInterval) clearInterval(refreshInterval);
-            refreshInterval = setInterval(() => {
-                fetchReadings();
-                fetchAlerts();
-                fetchIrrigation();
-            }, 10000);
+            refreshInterval = setInterval(fetchReadings, 10000);
         }
 
         // ========== Manual Refresh ==========
@@ -656,16 +639,12 @@
             refreshBtn.addEventListener('click', () => {
                 showSkeleton();
                 fetchReadings();
-                fetchAlerts();
-                fetchIrrigation();
             });
         }
 
         // ========== Initial Load ==========
         showSkeleton();
         fetchReadings();
-        fetchAlerts();
-        fetchIrrigation();
         startAutoRefresh();
     </script>
 </body>
